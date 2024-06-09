@@ -1,14 +1,16 @@
-import random
-import numpy as np
-import matplotlib.pyplot as plt
 import csv
-import os
-from datetime import datetime
+import random
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Patch
+
 from fish import Fish
 from plant import Plant
 
+
 class Lake:
-    def __init__(self, width, height, initial_fish, initial_food, plants, reproduction_interval):
+    def __init__(self, width, height, initial_fish, initial_food, plants, reproduction_interval, season_length):
         self.width = width
         self.height = height
         self.fish_population = initial_fish
@@ -17,8 +19,7 @@ class Lake:
         self.oxygen_level = 100
         self.generation_count = 0
         self.reproduction_interval = reproduction_interval
-        self.caught_fish_positions = []
-        self.season_length = 50
+        self.season_length = season_length
         self.current_season = 0
 
         self.fish_born_per_season = {"Spring": 0, "Summer": 0, "Fall": 0, "Winter": 0}
@@ -31,9 +32,18 @@ class Lake:
         self.food_amount_log = []
         self.oxygen_level_log = []
 
+        self.caught_fish_positions = []  # Initialize caught_fish_positions
+
+        # Plant reproduction and death probabilities per season
+        self.plant_probabilities = {
+            "Spring": {"reproduce": 0.003, "die": 0.0001},
+            "Summer": {"reproduce": 0.005, "die": 0.002},
+            "Fall": {"reproduce": 0.002, "die": 0.0005},
+            "Winter": {"reproduce": 0.001, "die": 0.008},
+        }
+
         # Create log files
         self.create_log_files()
-
     def create_log_files(self):
         """Initialize CSV log files."""
         self.fish_population_file = 'analyze/fish_population_log.csv'
@@ -97,6 +107,17 @@ class Lake:
         decay_factor = 0.02
         self.oxygen_level -= decay_factor * (len(self.fish_population) + len(self.plants))
 
+        # Handle plant reproduction and death
+        new_plants = []
+        for plant in self.plants:
+            if random.random() < self.plant_probabilities[season_name]["die"]:
+                self.plants.remove(plant)
+            else:
+                if random.random() < self.plant_probabilities[season_name]["reproduce"]:
+                    new_plants.append(Plant(position=(random.randint(0, self.width), random.randint(0, self.height))))
+
+        self.plants.extend(new_plants)
+
         for plant in self.plants:
             plant.generate_food()
             self.food_amount += food_generation
@@ -121,7 +142,8 @@ class Lake:
                     if random.random() < reproduction_chance:
                         parent1, parent2 = random.sample(self.fish_population, 2)
                         new_position = (parent1.position + parent2.position) / 2
-                        new_fish.append(Fish(id=len(self.fish_population) + len(new_fish), energy=50, position=new_position))
+                        new_fish.append(
+                            Fish(id=len(self.fish_population) + len(new_fish), energy=50, position=new_position))
             self.fish_population.extend(new_fish)
             self.fish_born_per_season[season_name] += len(new_fish)
 
@@ -191,23 +213,33 @@ class Lake:
     def plot_time_series(self):
         fig, axs = plt.subplots(3, 1, figsize=(10, 15))
 
+        # Define season names and colors
+        season_names = ["Spring", "Summer", "Fall", "Winter"]
+        season_colors = ["#98FB98", "#FFD700", "#FFA500", "#ADD8E6"]
+
+        # Plot Fish Population Over Time
         axs[0].plot(self.time_steps, self.fish_population_log, label='Fish Population', color='b')
         axs[0].set_xlabel('Time Step')
         axs[0].set_ylabel('Fish Population')
         axs[0].set_title('Fish Population Over Time')
         axs[0].legend()
+        self._add_season_shading(axs[0], season_colors)
 
+        # Plot Food Amount Over Time
         axs[1].plot(self.time_steps, self.food_amount_log, label='Food Amount', color='g')
         axs[1].set_xlabel('Time Step')
         axs[1].set_ylabel('Food Amount')
         axs[1].set_title('Food Amount Over Time')
         axs[1].legend()
+        self._add_season_shading(axs[1], season_colors)
 
+        # Plot Oxygen Level Over Time
         axs[2].plot(self.time_steps, self.oxygen_level_log, label='Oxygen Level', color='r')
         axs[2].set_xlabel('Time Step')
         axs[2].set_ylabel('Oxygen Level')
         axs[2].set_title('Oxygen Level Over Time')
         axs[2].legend()
+        self._add_season_shading(axs[2], season_colors)
 
         for ax in axs:
             ax.grid(True)
@@ -215,4 +247,20 @@ class Lake:
         plt.tight_layout()
         plt.savefig('analyze/overtime_stats.png')
         plt.close()
+
+    def _add_season_shading(self, ax, season_colors):
+        season_length = self.season_length
+        total_time_steps = len(self.time_steps)
+        for i in range(total_time_steps // season_length + 1):
+            for season_index, color in enumerate(season_colors):
+                start = (i * 4 + season_index) * season_length
+                end = start + season_length
+                if start < total_time_steps:
+                    ax.axvspan(start, min(end, total_time_steps), color=color, alpha=0.3)
+
+        # Add custom legend for season names and colors
+        custom_legend = [Patch(facecolor=color, label=season_name) for season_name, color in
+                         zip(["Spring", "Summer", "Fall", "Winter"], season_colors)]
+        ax.legend(handles=custom_legend, loc='upper right', bbox_to_anchor=(1.25, 1))
+
 
