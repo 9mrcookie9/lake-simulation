@@ -45,7 +45,7 @@ class Lake:
         # Create log files
         self.create_log_files()
     def create_log_files(self):
-        """Initialize CSV log files."""
+        #Initialize CSV log files
         self.fish_population_file = 'analyze/fish_population_log.csv'
         self.food_amount_file = 'analyze/food_amount_log.csv'
         self.oxygen_level_file = 'analyze/oxygen_level_log.csv'
@@ -64,7 +64,7 @@ class Lake:
             writer.writerow(['time_step', 'oxygen_level'])
 
     def log_data(self):
-        """Append data to CSV log files."""
+        #Append data to CSV log files
         with open(self.fish_population_file, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([self.generation_count, len(self.fish_population)])
@@ -85,6 +85,7 @@ class Lake:
 
         day_time = (self.generation_count % self.season_length) < (self.season_length // 2)
 
+        # Adjust reproduction chance, food generation, and oxygen generation based on season and day time
         if self.current_season == 0:
             reproduction_chance = 0.04
             food_generation = 1

@@ -1,14 +1,17 @@
+import os
+import random
+import shutil
+import sys
 import tkinter as tk
 from tkinter import messagebox
-import random
+
 import pygame
-import sys
-import shutil
-import os
+
 from fish import Fish
-from plant import Plant
 from fisherman import Fisherman
 from lake import Lake
+from plant import Plant
+
 
 def start_simulation(initial_fish_count, initial_plant_count, fishing_area, fisherman_probability, reproduction_interval, season_length):
     # Initialize pygame
@@ -63,7 +66,7 @@ def start_simulation(initial_fish_count, initial_plant_count, fishing_area, fish
 
         stats = lake.get_stats()
         stats_surface = font.render(
-            f"Fish: {stats['Fish count']} | Food: {stats['Food amount']} | Oxygen: {stats['Oxygen level']:.2f} | Season: {stats['Season']}",
+            f"Fish: {stats['Fish count']} | Food: {stats['Food amount']:.2f} | Oxygen: {stats['Oxygen level']:.2f} | Season: {stats['Season']}",
             True, (255, 255, 255)
         )
         screen.blit(stats_surface, (10, 10))
